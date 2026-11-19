@@ -21,8 +21,6 @@ sha2 = "0.10"
 hex = "0.4"
 uuid = { version = "1", features = ["v4"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-manual-roots"] }
-[target.'cfg(windows)'.dependencies]
-windows-service = "0.8"
 rusqlite = { version = "0.32", features = ["bundled", "backup"] }
 rust-embed = "8"
 mime_guess = "2"
@@ -33,6 +31,9 @@ qrcode = "0.14"
 ipnet = "2"
 chrono-tz = "0.10"
 mdns-sd = "0.13"
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.8"
 
 [package.metadata.deb]
 name = "lan-wake-manager-controller"
