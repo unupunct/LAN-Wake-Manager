@@ -19,7 +19,7 @@ The controller already contains a Wake Relay for its own LAN, so a single-locati
 
 1. Download the `.deb` and install it. `apt` pulls in the dependencies (`systemd`, `iputils-ping`):
    ```bash
-   sudo apt install ./lan-wake-manager-controller_1.0.0_amd64.deb
+   sudo apt install ./lan-wake-manager-controller_1.0.0-1_amd64.deb
    ```
 2. The package registers and starts the systemd service `lan-wake-controller` (starts at boot, restarts automatically after a crash). Check it:
    ```bash
@@ -53,7 +53,7 @@ missing (`dlopen(): error loading libfuse.so.2`): `sudo apt install libfuse2` or
 
 ## Wake Relay on another LAN
 
-1. `sudo apt install ./lan-wake-manager-relay_1.0.0_amd64.deb` (starts service `lan-wake-relay` on TCP 8444).
+1. `sudo apt install ./lan-wake-manager-relay_1.0.0-1_amd64.deb` (starts service `lan-wake-relay` on TCP 8444).
 2. Print the pairing information:
    ```bash
    sudo lwm-relay pair-code
@@ -64,7 +64,7 @@ missing (`dlopen(): error loading libfuse.so.2`): `sudo apt install libfuse2` or
 
 ## Agent on a computer you want to shut down / restart remotely
 
-1. `sudo apt install ./lan-wake-manager-agent_1.0.0_amd64.deb` (the service waits until the computer is enrolled).
+1. `sudo apt install ./lan-wake-manager-agent_1.0.0-1_amd64.deb` (the service waits until the computer is enrolled).
 2. In the dashboard open the computer → **Agent & power** → **Create enrollment code**. Copy the Linux command it shows; it looks like
    ```bash
    sudo lwm-agent enroll --controller https://100.64.0.5:8443 --code ABCD-EFGH --fingerprint 3f9a…
