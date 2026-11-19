@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+if [ -d /run/systemd/system ]; then
+  systemctl daemon-reload || true
+  systemctl enable lan-wake-agent.service || true
+  echo "LAN Wake Manager Agent installed. Enroll it with the command shown in the dashboard, then: sudo systemctl restart lan-wake-agent"
+  systemctl restart lan-wake-agent.service || true
+fi
+exit 0

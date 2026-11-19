@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LAN Wake Manager</title>
+<style>
+  html,body{height:100%;margin:0;background:#101215;color:#c9d1d9;font-family:system-ui,"Segoe UI",sans-serif}
+  .c{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+  .b{width:64px;height:64px;border-radius:16px;border:2px solid #2ee59d;display:grid;place-items:center;font-size:34px;color:#2ee59d;animation:p 1.6s ease-in-out infinite}
+  @keyframes p{50%{box-shadow:0 0 28px #2ee59d66}}
+  small{color:#7d8590;max-width:460px}
+</style></head><body><div class="c"><div class="b">&#9889;</div><div>Starting LAN Wake Manager&hellip;</div>
+<small id="m">Connecting to the controller on this computer.</small></div>
+<script>
+let tries = 0;
+async function probe() {
+  try { await fetch('http://127.0.0.1:8480/api/v1/info', { mode: 'no-cors', cache: 'no-store' }); location.replace('http://127.0.0.1:8480/'); return; } catch (e) {}
+  if (++tries > 20) document.getElementById('m').textContent = 'The controller does not answer on 127.0.0.1:8480. Install/start the "LAN Wake Manager Controller" service or reinstall the application.';
+  setTimeout(probe, 750);
+}
+probe();
+</script></body></html>

@@ -1,0 +1,40 @@
+[package]
+name = "lwm-relay"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+lwm-core = { path = "../lwm-core" }
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
+tracing = "0.1"
+clap = { version = "4", features = ["derive"] }
+axum = { version = "0.8", features = ["ws"] }
+axum-server = { version = "0.7", features = ["tls-rustls-no-provider"] }
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-manual-roots"] }
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.8"
+
+[package.metadata.deb]
+name = "lan-wake-manager-relay"
+maintainer = "unupunct <unupunct@users.noreply.github.com>"
+copyright = "2026, unupunct"
+license-file = ["../../LICENSE", "0"]
+extended-description = "Wake Relay: sends Wake-on-LAN packets inside this LAN on behalf of the controller and verifies that the computer comes up."
+section = "net"
+priority = "optional"
+depends = "$auto, systemd, iputils-ping"
+assets = [
+  ["target/release/lwm-relay", "usr/bin/", "755"],
+  ["../../packaging/linux/lan-wake-relay.service", "lib/systemd/system/", "644"],
+]
+maintainer-scripts = "../../packaging/linux/relay/"

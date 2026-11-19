@@ -1,0 +1,54 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util" xmlns:fw="http://wixtoolset.org/schemas/v4/wxs/firewall">
+  <!-- LAN Wake Manager: desktop window + Controller service (starts automatically with Windows, restarts after a crash).
+       The Wake Relay and the Agent have their own installers. Data lives in %ProgramData%\LANWakeManager and survives uninstall. -->
+  <Package Name="LAN Wake Manager" Manufacturer="unupunct" Version="$(var.Version)" Language="1033"
+           UpgradeCode="882F3A9F-FC2F-4054-85BC-380958BDF7EC" Scope="perMachine" Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of LAN Wake Manager is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <Icon Id="AppIcon.ico" SourceFile="$(var.IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/unupunct/LAN-Wake-Manager" />
+    <Launch Condition="Installed OR VersionNT64" Message="LAN Wake Manager requires 64-bit Windows 10 or 11." />
+    <Property Id="WEBVIEW2_MACHINE">
+      <RegistrySearch Id="Wv2Machine" Root="HKLM" Key="SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" Name="pv" Type="raw" Bitness="always32" />
+    </Property>
+    <Property Id="WEBVIEW2_USER">
+      <RegistrySearch Id="Wv2User" Root="HKCU" Key="Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" Name="pv" Type="raw" />
+    </Property>
+    <Launch Condition="Installed OR WEBVIEW2_MACHINE OR WEBVIEW2_USER" Message="The desktop window needs the Microsoft Edge WebView2 Runtime (built into Windows 11). Install it from https://developer.microsoft.com/microsoft-edge/webview2/ and run this setup again." />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="LAN Wake Manager" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main" Title="LAN Wake Manager" Level="1" AllowAbsent="no">
+      <ComponentRef Id="DesktopExe" />
+      <ComponentRef Id="ControllerExe" />
+      <ComponentRef Id="StartMenu" />
+    </Feature>
+
+    <Component Id="DesktopExe" Directory="INSTALLFOLDER" Guid="*">
+      <File Id="DesktopFile" Source="$(var.StageDir)\lan-wake-manager.exe" KeyPath="yes" />
+    </Component>
+
+    <Component Id="ControllerExe" Directory="INSTALLFOLDER" Guid="*">
+      <File Id="ControllerFile" Source="$(var.StageDir)\lwm-controller.exe" KeyPath="yes" />
+      <ServiceInstall Id="ControllerSvc" Name="LANWakeController" DisplayName="LAN Wake Manager Controller"
+                      Description="Manages computers, schedules, monitoring and remote (VPN) access for LAN Wake Manager."
+                      Type="ownProcess" Start="auto" ErrorControl="normal" Account="LocalSystem" Arguments="service" />
+      <ServiceControl Id="ControllerCtl" Name="LANWakeController" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+      <util:ServiceConfig ServiceName="LANWakeController" FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="restart" RestartServiceDelayInSeconds="5" ResetPeriodInDays="1" />
+      <!-- The API only answers private/VPN source addresses itself; the firewall rule just opens the port. -->
+      <fw:FirewallException Id="ControllerFw" Name="LAN Wake Manager Controller (TCP 8443)" Port="8443" Protocol="tcp" Scope="any" Profile="all" />
+    </Component>
+
+    <Component Id="StartMenu" Directory="ProgramMenuFolder" Guid="*">
+      <Shortcut Id="StartMenuLnk" Name="LAN Wake Manager" Description="Wake, shut down and restart your computers" Target="[INSTALLFOLDER]lan-wake-manager.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon.ico" />
+      <RegistryValue Root="HKCU" Key="Software\LANWakeManager" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+  </Package>
+</Wix>

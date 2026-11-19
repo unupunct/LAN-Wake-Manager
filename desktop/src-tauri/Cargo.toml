@@ -1,0 +1,24 @@
+[package]
+name = "lan-wake-manager"
+version = "1.0.0"
+description = "LAN Wake Manager desktop window"
+edition = "2021"
+license = "MIT"
+authors = ["unupunct"]
+
+# standalone workspace: the desktop shell is built separately from the Rust service crates
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+opt-level = "s"
+lto = "thin"
+strip = true
+
+[package.metadata.deb]
+name = "lan-wake-manager-desktop"

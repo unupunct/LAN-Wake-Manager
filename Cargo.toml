@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = ["crates/lwm-core", "crates/lwm-controller", "crates/lwm-relay", "crates/lwm-agent"]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["unupunct"]
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true
+opt-level = "s"

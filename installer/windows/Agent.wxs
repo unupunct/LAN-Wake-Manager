@@ -1,0 +1,33 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <!-- Agent for computers that should be shut down/restarted remotely. The service waits until the computer is enrolled with
+       `lwm-agent enroll` (the dashboard shows the exact command) (the dashboard shows the exact command). -->
+  <Package Name="LAN Wake Manager Agent" Manufacturer="unupunct" Version="$(var.Version)" Language="1033"
+           UpgradeCode="4D3F7051-026D-46E6-A075-8EA2E545B6CE" Scope="perMachine" Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of the LAN Wake Manager Agent is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <Icon Id="AppIcon.ico" SourceFile="$(var.IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Launch Condition="Installed OR VersionNT64" Message="Requires 64-bit Windows 10 or 11." />
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="LAN Wake Manager Agent" />
+    </StandardDirectory>
+    <Feature Id="Main" Title="Agent" Level="1" AllowAbsent="no">
+      <ComponentRef Id="AgentExe" />
+      <ComponentRef Id="AgentPath" />
+    </Feature>
+    <Component Id="AgentExe" Directory="INSTALLFOLDER" Guid="*">
+      <File Id="AgentFile" Source="$(var.StageDir)\lwm-agent.exe" KeyPath="yes" />
+      <ServiceInstall Id="AgentSvc" Name="LANWakeAgent" DisplayName="LAN Wake Manager Agent"
+                      Description="Reports status to LAN Wake Manager and performs shutdown/restart requests from your controller."
+                      Type="ownProcess" Start="auto" ErrorControl="normal" Account="LocalSystem" Arguments="service" />
+      <ServiceControl Id="AgentCtl" Name="LANWakeAgent" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+      <util:ServiceConfig ServiceName="LANWakeAgent" FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="restart" RestartServiceDelayInSeconds="5" ResetPeriodInDays="1" />
+    </Component>
+    <Component Id="AgentPath" Directory="INSTALLFOLDER" Guid="*">
+      <Environment Id="AgentPathEnv" Name="PATH" Value="[INSTALLFOLDER]" Part="last" Action="set" System="yes" />
+      <RegistryValue Root="HKLM" Key="Software\LANWakeManagerAgent" Name="Path" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+  </Package>
+</Wix>

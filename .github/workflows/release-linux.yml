@@ -1,0 +1,75 @@
+name: Linux packages
+# Builds the .deb packages (controller, relay, agent) and the desktop AppImage/.deb and attaches them to the GitHub release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attach the packages to (e.g. v1.0.0)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            desktop/src-tauri -> target
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: System packages for the desktop window
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 file
+      - name: Build dashboard
+        working-directory: ui
+        run: npm ci && npm run build
+      - name: Test
+        run: cargo test --workspace
+      - name: Build services
+        run: cargo build --release --workspace
+      - name: End-to-end test (release binaries)
+        run: |
+          sed -i 's#"target", "debug"#"target", "release"#' tools/e2e.py
+          python tools/e2e.py
+      - name: Debian packages (controller, relay, agent)
+        run: |
+          cargo install cargo-deb --locked
+          for c in controller relay agent; do cargo deb -p lwm-$c --no-build --no-strip; done
+          mkdir -p out && cp target/debian/*.deb out/
+      - name: Desktop window (AppImage + deb)
+        working-directory: desktop
+        run: |
+          mkdir -p src-tauri/binaries
+          cp ../target/release/lwm-controller src-tauri/binaries/lwm-controller-x86_64-unknown-linux-gnu
+          npm install --no-audit --no-fund
+          npx tauri build --bundles deb,appimage --config '{"bundle":{"externalBin":["binaries/lwm-controller"]}}'
+          cp src-tauri/target/release/bundle/appimage/*.AppImage ../out/LAN-Wake-Manager-x86_64.AppImage
+          cp src-tauri/target/release/bundle/deb/*.deb ../out/lan-wake-manager-desktop_amd64.deb
+      - name: Package checks
+        run: |
+          for f in out/*.deb; do echo "== $f"; dpkg-deb -I "$f" | head -12; dpkg-deb -c "$f" | head -8; done
+          sudo apt-get install -y ./out/lan-wake-manager-controller_*.deb ./out/lan-wake-manager-relay_*.deb ./out/lan-wake-manager-agent_*.deb
+          sleep 3
+          systemctl is-enabled lan-wake-controller lan-wake-relay lan-wake-agent || true
+          curl -fs http://127.0.0.1:8480/api/v1/info || (journalctl -u lan-wake-controller --no-pager | tail -20; exit 1)
+          sudo lwm-relay status
+          sudo apt-get remove -y lan-wake-manager-controller lan-wake-manager-relay lan-wake-manager-agent
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: out/*
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$TAG" out/* --clobber

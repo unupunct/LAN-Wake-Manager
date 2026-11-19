@@ -1,0 +1,15 @@
+[Unit]
+Description=LAN Wake Manager Agent
+Documentation=https://github.com/unupunct/LAN-Wake-Manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/lwm-agent service
+Restart=always
+RestartSec=5
+# Reports status and performs shutdown/restart requested by LAN Wake Manager
+
+[Install]
+WantedBy=multi-user.target

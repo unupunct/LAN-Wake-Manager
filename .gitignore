@@ -1,0 +1,16 @@
+target/
+node_modules/
+ui/dist/*
+!ui/dist/.gitkeep
+release/
+docs/screenshots/ui-scratch/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+desktop/src-tauri/binaries/
+desktop/node_modules/
+*.db
+*.log
+.env
+keystore.properties
+*.jks
+__pycache__/

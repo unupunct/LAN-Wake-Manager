@@ -1,0 +1,35 @@
+// Checks the first-run setup flow against a mock started with: MOCK_SETUP=1 PORT=8481 node dev/mock-server.mjs
+import puppeteer from 'puppeteer-core';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'screenshots', 'ui-scratch');
+const BASE = process.env.BASE || 'http://127.0.0.1:8481';
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const b = await puppeteer.launch({ executablePath: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', headless: true, args: ['--no-sandbox'] });
+const p = await b.newPage();
+await p.setViewport({ width: 1280, height: 800 });
+const errs = [];
+p.on('pageerror', (e) => errs.push(e.message));
+await p.goto(BASE);
+await p.waitForSelector('input[type=password]');
+const h1 = await p.$eval('h1', (e) => e.textContent);
+const inputs = await p.$$('input[type=password]');
+await inputs[0].type('short');
+await sleep(200);
+await p.screenshot({ path: path.join(OUT, '15-setup-short.png') });
+const disabledWhenShort = await p.$eval('button.primary', (e) => e.disabled);
+await inputs[0].click(); await p.keyboard.down('Control'); await p.keyboard.press('KeyA'); await p.keyboard.up('Control');
+await inputs[0].type('a-long-password-123');
+await inputs[1].type('a-long-password-123');
+await p.click('button.primary');
+await p.waitForSelector('.sidebar', { timeout: 5000 }).catch(async (e) => { await p.screenshot({ path: path.join(OUT, '15-setup-fail.png') }); console.log(await p.$eval('body', (b) => b.innerText.slice(0, 400))); throw e; });
+console.log({ h1, disabledWhenShort, loggedIn: true, errs });
+await p.evaluate(() => [...document.querySelectorAll('button')].find((x) => x.textContent.includes('Log out'))?.click());
+await p.waitForSelector('input[type=password]');
+await p.type('input[type=password]', 'wrong-password-1');
+await p.keyboard.press('Enter');
+await sleep(600);
+await p.screenshot({ path: path.join(OUT, '15-login-error.png') });
+console.log('login error text:', await p.$eval('.errorbox', (e) => e.textContent));
+await b.close();

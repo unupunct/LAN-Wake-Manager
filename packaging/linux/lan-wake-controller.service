@@ -1,0 +1,15 @@
+[Unit]
+Description=LAN Wake Manager Controller
+Documentation=https://github.com/unupunct/LAN-Wake-Manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/lwm-controller service
+Restart=always
+RestartSec=5
+# Manages computers, schedules, monitoring and remote access for LAN Wake Manager
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,48 @@
+// Screenshots the dashboard served by the REAL controller (see tools/demo_seed.py) and reports console/API errors.
+import puppeteer from 'puppeteer-core';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const BASE = process.env.BASE || 'http://127.0.0.1:18480';
+const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'screenshots');
+const [W = '1440', H = '900', prefix = 'desktop'] = process.argv.slice(2);
+fs.mkdirSync(OUT, { recursive: true });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const browser = await puppeteer.launch({ executablePath: EDGE, headless: true, args: ['--no-sandbox'] });
+const page = await browser.newPage();
+await page.setViewport({ width: Number(W), height: Number(H) });
+const problems = [];
+page.on('console', (m) => { if (m.type() === 'error') problems.push(`[console] ${m.text()}`); });
+page.on('pageerror', (e) => problems.push(`[pageerror] ${e.message}`));
+page.on('response', (r) => { if (r.status() >= 400 && r.url().includes('/api/')) problems.push(`[http ${r.status()}] ${r.request().method()} ${r.url()}`); });
+const shot = async (n) => { await sleep(900); await page.screenshot({ path: path.join(OUT, `${prefix}-${n}.png`) }); };
+const go = async (h) => { await page.goto(`${BASE}/#${h}`); await sleep(900); };
+const clickText = async (sel, text) => { await page.evaluate((s, t) => { const el = [...document.querySelectorAll(s)].find((e) => e.textContent.trim().includes(t) && !e.disabled); el && el.click(); }, sel, text); await sleep(600); };
+
+await page.goto(BASE);
+await page.waitForSelector('input[type=password]');
+await page.type('input[type=password]', 'demo-password-123');
+await page.keyboard.press('Enter');
+await page.waitForSelector('.sidebar');
+await sleep(1500);
+await shot('dashboard');
+await go('/devices'); await shot('devices-grid');
+await clickText('.segmented button', 'Table'); await shot('devices-table');
+await clickText('.segmented button', 'Cards');
+await page.evaluate(() => { const el = [...document.querySelectorAll('a,button,h3,div,span')].find((e) => e.children.length === 0 && e.textContent.trim() === 'Workstation'); el && el.click(); }); await sleep(1500); await shot('device-details');
+await clickText('[role=tab]', 'System'); await shot('device-system');
+await go('/groups'); await shot('groups');
+await go('/locations'); await shot('locations');
+await go('/schedules'); await shot('schedules');
+await go('/history'); await shot('history');
+await go('/mobile'); await clickText('button', 'Add mobile device'); await clickText('button', 'Show pairing QR'); await sleep(800); await shot('mobile-pairing');
+await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await sleep(300);
+await go('/remote'); await clickText('button', 'Run diagnostics'); await sleep(1500); await shot('remote-access');
+await go('/backup'); await shot('backup');
+await go('/audit'); await shot('audit');
+await go('/settings'); await shot('settings');
+await go('/discovery'); await shot('discovery');
+console.log(problems.length ? problems.join('\n') : 'no console or API errors');
+await browser.close();

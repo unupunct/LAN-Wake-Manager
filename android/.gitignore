@@ -1,0 +1,11 @@
+local.properties
+keystore.properties
+*.jks
+*.keystore
+build/
+.gradle/
+.idea/
+*.iml
+.kotlin/
+captures/
+app/src/test/snapshots/

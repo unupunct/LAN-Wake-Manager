@@ -1,0 +1,28 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Build dashboard
+        working-directory: ui
+        run: npm ci && npm run build && npm test
+      - name: Rust tests
+        run: cargo test --workspace
+      - name: Build binaries
+        run: cargo build --workspace
+      - name: End-to-end test (controller + relay + agent processes)
+        run: python tools/e2e.py
